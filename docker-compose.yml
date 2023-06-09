@@ -1,0 +1,71 @@
+# 使用 3.8 版的設定檔，通常新版本會有新的功能，並支援新的設定參數
+version: "3.8"
+services:
+    php:
+        image: "my_php:latest"
+        working_dir: /my_code
+        hostname: my_php
+        container_name: php
+        restart: always
+        environment:
+            PMA_HOST: 'my_mysql'
+        links:
+            - my_mysql
+        volumes:
+            - ~/my_code:/my_code
+        networks:
+            - my_net
+    
+    my_nginx:
+        image: "my_nginx:latest"
+        container_name: my_nginx
+        hostname: my_web
+        volumes:
+            - ~/my_code:/my_code
+        ports:
+            - "80:80"
+            - "443:443"
+        links:
+            - php
+            - my_mysql
+            #- nuxt
+        networks:
+            - my_net
+        depends_on:
+            - php
+
+    my_phpmyadmin:
+        image: phpmyadmin/phpmyadmin:latest
+        container_name: my_phpmyadmin
+        environment:
+            PMA_HOST: 'my_mysql'
+        ports:
+            - "8081:80"
+        networks:
+            - my_net
+        links:
+            - my_mysql
+        depends_on:
+            - my_mysql
+    my_mysql:
+        container_name: my_mysql
+        restart: always
+        image: "my_mysql:latest"
+        networks:
+            - my_net
+        ports:
+            - 127.0.0.1:3306:3306
+        environment:
+            MYSQL_ROOT_PASSWORD: "${MY_MYSQL_ROOT_PWD}"
+            MYSQL_DATABASE: "${DATABASE_NAME}"
+            MYSQL_USER: "${DATABASE_USERNAME}"
+            MYSQL_PASSWORD: "${DATABASE_PASSWORD}"
+        volumes:
+            - ~/mysql/mysqld.cnf:/etc/my.cnf
+            - my-datavolume:/var/lib/mysql
+    
+networks:
+    my_net:
+        external: true
+volumes:
+    my-datavolume:
